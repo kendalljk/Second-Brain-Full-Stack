@@ -1,66 +1,82 @@
-import React from "react";
+import React, { useReducer } from "react";
 import { Button } from "react-bootstrap";
 import axios from "axios";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-
-const initialFormState = {
-    bookTitle: "",
-    bookAuthor: "",
-    bookSummary: "",
-    bookGenre: "",
-    bookQuotes: "",
-    bookNotes: "",
-    bookFinished: false,
-    bookCover: "",
-};
+import { ACTION_TYPES, INITIAL_STATE, reducer } from "../hooks/useReducer";
 
 const CreateNote = () => {
-  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-      console.log()
+    const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+    //supported formats for cover inputs
+    const SUPPORTED_FORMATS = [
+        "image/jpg",
+        "image/jpeg",
+        "image/gif",
+        "image/png",
+    ];
+
+    const handleSubmit = async (values, { setSubmitting, resetForm }) => {
         const formDataForUploads = new FormData();
         formDataForUploads.append("bookCover", values.bookCover);
-
-        const formDataForNotes = new FormData();
-
         try {
             // Upload file
             const uploadResponse = await axios.post(
                 "/uploads",
                 formDataForUploads
             );
+            //dispatch START_CREATE_NOTE w/ form values as payload
+            dispatch({ type: ACTION_TYPES.START_CREATE_NOTE, payload: values });
 
-            formDataForNotes.append("coverPath", uploadResponse.data.path);
-
+            const formDataForNotes = new FormData();
+            console.log("Cover upload", uploadResponse);
+            //add book cover string from uploadResponse
+            formDataForNotes.append("coverPath", uploadResponse.data.data.url); // Add this line
+            //add rest of form values to formDataForNotes
             Object.entries(values).forEach(([key, value]) => {
                 if (key !== "bookCover") {
-                    formDataForNotes.append(key, value);
+                    if (key === "bookQuotes" || key === "bookNotes") {
+                        value
+                            .split("\n")
+                            .forEach((item) =>
+                                formDataForNotes.append(key, item.trim())
+                            );
+                    } else {
+                        formDataForNotes.append(key, value);
+                    }
                 }
             });
-
+            console.log("Note upload", ...formDataForNotes);
             await axios.post("/notes", formDataForNotes);
+            //dispatch SUCCESS_CREATE_NOTE if successful
+            dispatch({
+                type: ACTION_TYPES.SUCCESS_CREATE_NOTE,
+                payload: values,
+            });
 
             resetForm();
         } catch (error) {
+            //dispatch ERROR_CREATE_NOTE if error
+            dispatch({ type: ACTION_TYPES.ERROR_CREATE_NOTE });
             console.error(`Failed to create note: ${error.message}`);
+        } finally {
+            setSubmitting(false);
         }
-
-        setSubmitting(false);
     };
 
     return (
         <div>
             <Formik
-                initialValues={initialFormState}
+                initialValues={INITIAL_STATE.note}
                 validationSchema={Yup.object({
                     bookTitle: Yup.string()
-                        .max(20, "Must be 20 characters or less")
+                        .max(30, "Must be 30 characters or less")
                         .required("Required"),
                     bookAuthor: Yup.string()
                         .max(20, "Must be 20 characters or less")
                         .required("Required"),
                     bookSummary: Yup.string()
-                        .min(50, "Must be at least 50 characters")
+                        .min(20, "Must be at least 20 characters")
+                        .max(300, "Must be 300 characters or less")
                         .required("Required"),
                     bookGenre: Yup.string()
                         .oneOf([
@@ -79,15 +95,67 @@ const CreateNote = () => {
                             "youngAdult",
                         ])
                         .required("Select a genre"),
+                    bookQuotes: Yup.string()
+                        .required("Book quotes are required")
+                        .test(
+                            "is-string-array",
+                            "Must be line-separated strings",
+                            (value) => {
+                                if (value) {
+                                    return value
+                                        .split("\n")
+                                        .every(
+                                            (item) =>
+                                                typeof item.trim() ===
+                                                    "string" &&
+                                                item.trim() !== ""
+                                        );
+                                }
+                                return true;
+                            }
+                        ),
+                    bookNotes: Yup.string()
+                        .required("Book notes are required")
+                        .test(
+                            "is-string-array",
+                            "Must be line-separated strings",
+                            (value) => {
+                                if (value) {
+                                    return value
+                                        .split("\n")
+                                        .every(
+                                            (item) =>
+                                                typeof item.trim() ===
+                                                    "string" &&
+                                                item.trim() !== ""
+                                        );
+                                }
+                                return true;
+                            }
+                        ),
                     bookFinished: Yup.boolean(),
-                    bookQuotes: Yup.string(),
-                    bookNotes: Yup.string(),
-                    bookCover: Yup.mixed(),
+                    bookCover: Yup.mixed()
+                        .required("A book cover is required")
+                        .test(
+                            "fileFormat",
+                            "Unsupported Format",
+                            (value) =>
+                                value && SUPPORTED_FORMATS.includes(value.type)
+                        ),
                 })}
                 onSubmit={handleSubmit}
             >
-                {({ isSubmitting, setFieldValue }) => (
-                    <Form>
+                {({ submitting, setFieldValue }) => (
+                    <Form
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            padding: "5%",
+                            width: "75%",
+                            margin: " 5% auto",
+                            border: "2px solid",
+                        }}
+                    >
                         <label htmlFor="bookTitle">Book title</label>
                         <Field id="bookTitle" name="bookTitle" type="text" />
                         <ErrorMessage name="bookTitle" />
@@ -178,177 +246,18 @@ const CreateNote = () => {
                         />
 
                         <Button
+                            className="my-3"
                             variant="primary"
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={state.submitting}
                         >
                             Submit
                         </Button>
                     </Form>
                 )}
             </Formik>
-            <p>It's the Formik, dawg</p>
         </div>
     );
 };
 
 export default CreateNote;
-
-/*
-import React, { useState } from "react";
-import { Form, Button } from "react-bootstrap";
-import axios from "axios";
-
-const initialFormState = {
-    bookAuthor: "",
-    bookTitle: "",
-    bookSummary: "",
-    bookQuotes: "",
-    bookNotes: "",
-    bookFinished: false,
-    bookCover: null,
-};
-
-const CreateNote = () => {
-    const [formState, setFormState] = useState(initialFormState);
-    const [error, setError] = useState("");
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-
-        const formDataForUploads = new FormData();
-        formDataForUploads.append("bookCover", formState.bookCover);
-
-        const formDataForNotes = new FormData();
-
-        try {
-            // Upload file
-            const uploadResponse = await axios.post(
-                "/uploads",
-                formDataForUploads
-            );
-
-            formDataForNotes.append("coverPath", uploadResponse.data.path);
-
-            Object.entries(formState).forEach(([key, value]) => {
-                if (key !== "bookCover") {
-                    formDataForNotes.append(key, value);
-                }
-            });
-
-            await axios.post("/notes", formDataForNotes);
-
-            resetForm();
-        } catch (error) {
-            setError(`Failed to create note: ${error.message}`);
-        }
-    };
-
-    const resetForm = () => {
-        setFormState(initialFormState);
-    };
-
-    const handleInputChange = (e) => {
-        const value =
-            e.target.type === "file"
-                ? e.target.files[0]
-                : e.target.type === "checkbox"
-                ? e.target.checked
-                : e.target.value;
-        setFormState({
-            ...formState,
-            [e.target.name]: value,
-        });
-    };
-
-    return (
-        <div>
-            {error && <p>{error}</p>}
-            <Form onSubmit={handleSubmit}>
-                <Form.Group controlId="formTitle">
-                    <Form.Label>Title</Form.Label>
-                    <Form.Control
-                        type="text"
-                        name="bookTitle"
-                        placeholder="Enter book title"
-                        value={formState.bookTitle}
-                        onChange={handleInputChange}
-                    ></Form.Control>
-                </Form.Group>
-                <Form.Group controlId="formAuthor">
-                    <Form.Label>Author</Form.Label>
-                    <Form.Control
-                        type="text"
-                        name="bookAuthor"
-                        placeholder="Enter book author"
-                        value={formState.bookAuthor}
-                        onChange={handleInputChange}
-                    ></Form.Control>
-                </Form.Group>
-                <Form.Group controlId="formSummary">
-                    <Form.Label>Summary</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        name="bookSummary"
-                        placeholder="Enter brief summary"
-                        value={formState.bookSummary}
-                        onChange={handleInputChange}
-                        style={{
-                            height: "100px",
-                        }}
-                    ></Form.Control>
-                </Form.Group>
-                <Form.Group controlId="formQuotes">
-                    <Form.Label>Quotes</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        name="bookQuotes"
-                        placeholder="Your favorite quotes here"
-                        value={formState.bookQuotes}
-                        onChange={handleInputChange}
-                        style={{
-                            height: "100px",
-                        }}
-                    ></Form.Control>
-                </Form.Group>
-                <Form.Group controlId="formNotes">
-                    <Form.Label>Notes</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        name="bookNotes"
-                        placeholder="Your notes and takeaways here"
-                        value={formState.bookNotes}
-                        onChange={handleInputChange}
-                        style={{
-                            height: "100px",
-                        }}
-                    ></Form.Control>
-                </Form.Group>
-                <Form.Group controlId="formFinished">
-                    <Form.Check
-                        type="checkbox"
-                        name="bookFinished"
-                        label="Finished"
-                        value={formState.bookFinished}
-                        onChange={handleInputChange}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Add book cover</Form.Label>
-                    <Form.Control
-                        type="file"
-                        name="bookCover"
-                        id="fileInput"
-                        onChange={handleInputChange}
-                    />
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                    Submit
-                </Button>
-            </Form>
-        </div>
-    );
-};
-
-export default CreateNote;
-*/
