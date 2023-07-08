@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { Container, Form, Button } from "react-bootstrap";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import leftArrow from "../icons/left-arrow.png";
 import rightArrow from "../icons/right-arrow.png";
 
-const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
+const BookSearch = ({ bookData, setBookData, page, setPage }) => {
     const navigate = useNavigate();
 
-    const [formState, setFormState] = useState({
+    const [searchParams, setSearchParams] = useState({
         bookTitle: "",
         authorName: "",
     });
+
+    const [lastSearchParams, setLastSearchParams] = useState({});
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setSearchParams((prevState) => ({
+            ...prevState,
+            [name]: value,
+        }));
+    };
 
     useEffect(() => {
         return () => {
@@ -18,34 +29,22 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
         };
     }, []);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormState((prevState) => ({
-            ...prevState,
-            [name]: value,
-        }));
-    };
+    useEffect(() => {
+        if (lastSearchParams.bookTitle || lastSearchParams.authorName) {
+            fetchBooks(lastSearchParams, page);
+        }
+    }, [page]); //fetches new bookData when page changes
 
     const handleNextClick = () => {
-        setBookIndex((prevIndex) =>
-            Math.min(prevIndex + 5, bookData.length - 5)
-        );
+        setPage((prevPage) => prevPage + 1);
     };
-
-    useEffect(() => {
-        console.log("Book Index", bookIndex);
-    }, [bookIndex]);
-    //ensures that state is updated to make handlePrevClick function correctly
 
     const handlePrevClick = () => {
-        setBookIndex((prevIndex) => Math.max(prevIndex - 5, 0));
+        setPage((prevPage) => Math.max(prevPage - 1, 1));
     };
 
-    console.log("book data", bookData);
-
-    const fetchBook = async (e) => {
-        e.preventDefault();
-        const { bookTitle, authorName } = formState;
+  const fetchBooks = async ({ bookTitle, authorName }, page) => {
+          console.log("Fetching books for page:", page);
 
         let querySearch = "";
         if (bookTitle && authorName) {
@@ -58,16 +57,13 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
             querySearch = `author=${encodeURIComponent(authorName)}`;
         }
 
-        const OPEN_LIBRARY_API = `https://openlibrary.org/search.json?${querySearch}`;
-        try {
-            const response = await fetch(OPEN_LIBRARY_API);
-            if (!response.ok) {
-                throw new Error("Fetch Failed");
-            }
+        const OPEN_LIBRARY_API = `https://openlibrary.org/search.json?${querySearch}&limit=5&page=${page}`;
 
-            const data = await response.json();
+        try {
+          const response = await axios.get(OPEN_LIBRARY_API);
+          console.log("API response", response.data)
+            const data = response.data;
             const bookResults = data.docs;
-            console.log("Books from API:", bookResults);
             const bookDataWithCover = [];
 
             for (let i = 0; i < bookResults.length; i++) {
@@ -88,17 +84,25 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
                 }
             }
             setBookData(bookDataWithCover);
-            setBookIndex(0);
-
             navigate(`/booksearch/${bookTitle ? bookTitle : authorName}`);
         } catch (error) {
-            console.log(error);
+            console.log("Error while fetching books:", error);
         } finally {
-            setFormState({
+            setSearchParams({
                 bookTitle: "",
                 authorName: "",
             });
         }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        fetchBooks(searchParams, 1); // Start from page 1 when a new search is performed
+        setLastSearchParams(searchParams);
+        setSearchParams({
+            bookTitle: "",
+            authorName: "",
+        });
     };
 
     return (
@@ -139,7 +143,7 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
                 <h6 className="text-center formTitle">Search for Book</h6>
                 <Form
                     className="bookSearchForm"
-                    onSubmit={fetchBook}
+                    onSubmit={handleSubmit}
                     style={{
                         boxShadow: "10px 10px 10px 5px rgba(0, 0, 0, 0.2)",
                         height: "50%",
@@ -151,7 +155,7 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
                             type="text"
                             name="bookTitle"
                             placeholder="Title"
-                            value={formState.bookTitle}
+                            value={searchParams.bookTitle}
                             onChange={handleInputChange}
                         />
                     </Form.Group>
@@ -161,7 +165,7 @@ const BookSearch = ({ bookData, setBookData, bookIndex, setBookIndex }) => {
                             type="text"
                             name="authorName"
                             placeholder="Author"
-                            value={formState.authorName}
+                            value={searchParams.authorName}
                             onChange={handleInputChange}
                         />
                     </Form.Group>

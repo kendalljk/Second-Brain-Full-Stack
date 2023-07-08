@@ -10,7 +10,7 @@ import { useState } from "react";
 
 function App() {
     const [bookData, setBookData] = useState([]); //booksearch buttons only appear when length > 0
-    const [bookIndex, setBookIndex] = useState(0); // ensures displays first result each time
+    const [page, setPage] = useState(1); // ensures displays first result each time
     const location = useLocation();
     const isOnLoadingPage = location.pathname === "/"; //sets path for loading page
 
@@ -27,8 +27,8 @@ function App() {
                         <BookSearch
                             bookData={bookData}
                             setBookData={setBookData}
-                            bookIndex={bookIndex}
-                            setBookIndex={setBookIndex}
+                            page={page}
+                            setPage={setPage}
                         />
                     }
                 >
@@ -37,7 +37,7 @@ function App() {
                         element={
                             <BookList
                                 bookData={bookData}
-                                bookIndex={bookIndex}
+                                page={page}
                             />
                         }
                     />

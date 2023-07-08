@@ -1,9 +1,9 @@
 import React, { useReducer } from "react";
 import { Button } from "react-bootstrap";
-import axios from "axios";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { ACTION_TYPES, INITIAL_STATE, reducer } from "../hooks/useReducer";
+import api from "../utils/api";
 
 const CreateNote = () => {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
@@ -20,7 +20,7 @@ const CreateNote = () => {
         formDataForUploads.append("bookCover", values.bookCover);
         try {
             // Upload file
-            const uploadResponse = await axios.post(
+            const uploadResponse = await api.post(
                 "/uploads",
                 formDataForUploads
             );
@@ -46,7 +46,7 @@ const CreateNote = () => {
                 }
             });
             console.log("Note upload", ...formDataForNotes);
-            await axios.post("/notes", formDataForNotes);
+            await api.post("/notes", formDataForNotes);
             //dispatch SUCCESS_CREATE_NOTE if successful
             dispatch({
                 type: ACTION_TYPES.SUCCESS_CREATE_NOTE,

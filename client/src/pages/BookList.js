@@ -7,12 +7,19 @@ import addIcon from "../icons/add-icon.png";
 
 const BookList = ({
   bookData,
-  bookIndex,
+  page,
   myNote,
   setMyNote,
   setToReadList,
 }) => {
   const navigate = useNavigate();
+  const booksPerPage = 5;
+  const start = (page - 1) * booksPerPage;
+  const end = start + booksPerPage;
+
+  console.log("BookList Book Data", bookData)
+  console.log("Page", page)
+
   const navToNote = (book) => {
     const selectedBookData = {
       key: book.key,
@@ -49,7 +56,7 @@ const BookList = ({
     setHoveredBook(key);
     document.getElementById(`addToTBR-${key}`).classList.add("expanded");
     setTimeout(() => {
-      setButtonMessage("Add to TBR");
+      setButtonMessage("+ TBR");
     }, 400);
   };
   //expands first, then displays message
@@ -81,7 +88,7 @@ const BookList = ({
         </Alert>
       )}
       <Row className="d-flex justify-content-center">
-        {bookData.slice(bookIndex, bookIndex + 5).map((book) => (
+        {bookData.slice(start, end).map((book) => (
           <Col className="d-flex justify-content-center" key={book.key}>
             <Card
               className="bookCard"
