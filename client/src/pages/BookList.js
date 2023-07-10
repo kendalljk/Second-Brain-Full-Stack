@@ -1,12 +1,26 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Container, Col, Row, Alert } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import addIcon from "../icons/add-icon.png";
 import { BookContext, ACTION_TYPES } from "../contexts/BookContext";
+import { useLocation } from "react-router-dom";
 
-const BookList = ({ loading, booksReturned, setToReadList }) => {
+const BookList = ({
+    loading,
+    booksReturned,
+    setBooksReturned,
+    setToReadList,
+}) => {
     const { state, dispatch } = useContext(BookContext);
+    const location = useLocation();
+    console.log(booksReturned);
+
+    useEffect(() => {
+        if (location.pathname === "/bookSearch") {
+            setBooksReturned([]);
+        }
+    }, [location.pathname]);
 
     const [showAlert, setShowAlert] = useState(false);
     const addToTBR = (book) => {
@@ -46,11 +60,6 @@ const BookList = ({ loading, booksReturned, setToReadList }) => {
         }, 100);
     };
     //removes message first, then expanded
-
-    if (loading) {
-        console.log("Loading....");
-        return <h2>Loading...</h2>;
-    }
 
     return (
         <Container className="text-center">

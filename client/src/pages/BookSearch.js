@@ -30,7 +30,7 @@ const BookSearch = ({ page, setPage }) => {
     );
 
     useEffect(() => {
-        setBooksReturned([]);
+        setPage(1);
         setSearchParams({
             bookTitle: "",
             authorName: "",
@@ -58,7 +58,19 @@ const BookSearch = ({ page, setPage }) => {
         setFetchParams(searchParams); // Set fetchParams as searchParams for the fetch call
         setSearchParams({ bookTitle: "", authorName: "" }); // Clear the search input fields
         dispatch({ type: ACTION_TYPES.START_FETCH_COVER }); // Dispatch action to start fetching covers
-        navigate(`/booksearch/${searchParams.bookTitle}`); // Navigate to the book list page
+
+        const searchQuery =
+            searchParams.bookTitle && searchParams.authorName
+                ? `/bookSearch/${encodeURIComponent(searchParams.bookTitle)}&author=${encodeURIComponent(searchParams.authorName)}`
+                : searchParams.bookTitle
+                ? `/bookSearch/${encodeURIComponent(searchParams.bookTitle)}`
+                : searchParams.authorName
+                ? `/bookSearch/${encodeURIComponent(
+                      searchParams.authorName
+                  )}`
+                : "/bookSearch";
+
+        navigate(searchQuery); // Navigate to the book list page with the dynamic URL
     };
 
     const handleNextClick = () => {
@@ -84,7 +96,10 @@ const BookSearch = ({ page, setPage }) => {
                 alignItems: "center",
             }}
         >
-            <BookList booksReturned={booksReturned} />
+            <BookList
+                booksReturned={booksReturned}
+                setBooksReturned={setBooksReturned}
+            />
             {booksReturned.length > 0 && (
                 <div className="d-flex justify-content-center mt-3">
                     <Button className="booklist-button">
