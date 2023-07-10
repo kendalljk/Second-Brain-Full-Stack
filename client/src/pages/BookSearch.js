@@ -1,109 +1,79 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Container, Form, Button } from "react-bootstrap";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import BookList from "./BookList";
+import useFetchBooks from "../hooks/useFetchBooks";
+import { BookContext } from "../contexts/BookContext";
+import { useNavigate } from "react-router-dom";
+import { ACTION_TYPES } from "../hooks/useReducer";
 import leftArrow from "../icons/left-arrow.png";
 import rightArrow from "../icons/right-arrow.png";
 
-const BookSearch = ({ bookData, setBookData, page, setPage }) => {
+const BookSearch = ({ page, setPage }) => {
     const navigate = useNavigate();
-
+    const {
+        state: { loading },
+        dispatch,
+    } = useContext(BookContext);
     const [searchParams, setSearchParams] = useState({
         bookTitle: "",
         authorName: "",
     });
-
-    const [lastSearchParams, setLastSearchParams] = useState({});
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setSearchParams((prevState) => ({
-            ...prevState,
-            [name]: value,
-        }));
-    };
+    const [fetchParams, setFetchParams] = useState({
+        bookTitle: "",
+        authorName: "",
+    });
+    const [submitting, setSubmitting] = useState(false);
+    const { booksReturned, setBooksReturned } = useFetchBooks(
+        fetchParams,
+        page,
+        submitting
+    );
 
     useEffect(() => {
-        return () => {
-            setBookData([]); // Clears bookData array when component unmounts so buttons dissappear when no books are displayed
-        };
+        setBooksReturned([]);
+        setSearchParams({
+            bookTitle: "",
+            authorName: "",
+        });
+        setFetchParams({
+            bookTitle: "",
+            authorName: "",
+        });
     }, []);
 
     useEffect(() => {
-        if (lastSearchParams.bookTitle || lastSearchParams.authorName) {
-            fetchBooks(lastSearchParams, page);
-        }
-    }, [page]); //fetches new bookData when page changes
-
-    const handleNextClick = () => {
-        setPage((prevPage) => prevPage + 1);
-    };
-
-    const handlePrevClick = () => {
-        setPage((prevPage) => Math.max(prevPage - 1, 1));
-    };
-
-  const fetchBooks = async ({ bookTitle, authorName }, page) => {
-          console.log("Fetching books for page:", page);
-
-        let querySearch = "";
-        if (bookTitle && authorName) {
-            querySearch = `q=${encodeURIComponent(
-                bookTitle
-            )}&author=${encodeURIComponent(authorName)}`;
-        } else if (bookTitle) {
-            querySearch = `title=${encodeURIComponent(bookTitle)}`;
-        } else if (authorName) {
-            querySearch = `author=${encodeURIComponent(authorName)}`;
-        }
-
-        const OPEN_LIBRARY_API = `https://openlibrary.org/search.json?${querySearch}&limit=5&page=${page}`;
-
-        try {
-          const response = await axios.get(OPEN_LIBRARY_API);
-          console.log("API response", response.data)
-            const data = response.data;
-            const bookResults = data.docs;
-            const bookDataWithCover = [];
-
-            for (let i = 0; i < bookResults.length; i++) {
-                const book = bookResults[i];
-                const key = book.key;
-                const title = book.title;
-                const author = book.author_name
-                    ? book.author_name[0]
-                    : "Unknown Author";
-                if (book.cover_i) {
-                    const COVER_LIBRARY_API = `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`;
-                    bookDataWithCover.push({
-                        key: key,
-                        title: title,
-                        author: author,
-                        coverArtUrl: COVER_LIBRARY_API,
-                    });
-                }
-            }
-            setBookData(bookDataWithCover);
-            navigate(`/booksearch/${bookTitle ? bookTitle : authorName}`);
-        } catch (error) {
-            console.log("Error while fetching books:", error);
-        } finally {
+        if (booksReturned.length > 0) {
+            // If book data is successfully fetched and is not empty, reset search params
             setSearchParams({
                 bookTitle: "",
                 authorName: "",
             });
         }
-    };
+    }, [booksReturned]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        fetchBooks(searchParams, 1); // Start from page 1 when a new search is performed
-        setLastSearchParams(searchParams);
-        setSearchParams({
-            bookTitle: "",
-            authorName: "",
-        });
+        setSubmitting(true);
+        console.log("...fetching");
+        setFetchParams(searchParams); // Set fetchParams as searchParams for the fetch call
+        setSearchParams({ bookTitle: "", authorName: "" }); // Clear the search input fields
+        dispatch({ type: ACTION_TYPES.START_FETCH_COVER }); // Dispatch action to start fetching covers
+        navigate(`/booksearch/${searchParams.bookTitle}`); // Navigate to the book list page
     };
+
+    const handleNextClick = () => {
+        setPage((prevPage) => prevPage + 1);
+        setSubmitting(true);
+    };
+
+    const handlePrevClick = () => {
+        setPage((prevPage) => Math.max(prevPage - 1, 1));
+        setSubmitting(true);
+    };
+
+    if (loading) {
+        return <h2>Loading...</h2>;
+    }
 
     return (
         <Container
@@ -114,8 +84,8 @@ const BookSearch = ({ bookData, setBookData, page, setPage }) => {
                 alignItems: "center",
             }}
         >
-            <Outlet bookData={bookData} />
-            {bookData.length > 0 && (
+            <BookList booksReturned={booksReturned} />
+            {booksReturned.length > 0 && (
                 <div className="d-flex justify-content-center mt-3">
                     <Button className="booklist-button">
                         <img
@@ -132,12 +102,11 @@ const BookSearch = ({ bookData, setBookData, page, setPage }) => {
                     </Button>
                 </div>
             )}
-            {/* div containing buttons only appears if books are being displayed */}
             <div
                 className="justify-content-center"
                 style={{
                     width: "40%",
-                    marginTop: bookData.length > 0 ? "3rem" : "11%",
+                    marginTop: booksReturned.length > 0 ? "3rem" : "11%",
                 }}
             >
                 <h6 className="text-center formTitle">Search for Book</h6>
@@ -156,7 +125,12 @@ const BookSearch = ({ bookData, setBookData, page, setPage }) => {
                             name="bookTitle"
                             placeholder="Title"
                             value={searchParams.bookTitle}
-                            onChange={handleInputChange}
+                            onChange={(e) =>
+                                setSearchParams((prevState) => ({
+                                    ...prevState,
+                                    bookTitle: e.target.value,
+                                }))
+                            }
                         />
                     </Form.Group>
                     <Form.Group className="" controlId="formAuthorName">
@@ -166,7 +140,12 @@ const BookSearch = ({ bookData, setBookData, page, setPage }) => {
                             name="authorName"
                             placeholder="Author"
                             value={searchParams.authorName}
-                            onChange={handleInputChange}
+                            onChange={(e) =>
+                                setSearchParams((prevState) => ({
+                                    ...prevState,
+                                    authorName: e.target.value,
+                                }))
+                            }
                         />
                     </Form.Group>
                     <div className="text-center">
