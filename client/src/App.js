@@ -8,6 +8,7 @@ import CreateNote from "./pages/CreateNote";
 import BookList from "./pages/BookList";
 import BookSearch from "./pages/BookSearch";
 import { BookProvider } from "./contexts/BookContext";
+import AddNote from "./pages/AddNote";
 
 function App() {
     const [page, setPage] = useState(1); // ensures displays first result each time
@@ -22,23 +23,14 @@ function App() {
                 <Routes>
                     <Route path="/" element={<LoadingPage />}></Route>
                     <Route path="/home" element={<Homepage />} />
-                    <Route
-                        path="/booksearch"
-                        element={
-                            <BookSearch
-                                page={page}
-                                setPage={setPage}
-                            />
-                        }
-                    >
+                    <Route path="/booksearch" element={<BookSearch />}>
                         <Route
                             path="/booksearch/:query"
-                            element={
-                                <BookList page={page} />
-                            }
+                            element={<BookList />}
                         />
                     </Route>
                     <Route path="/create_note" element={<CreateNote />} />
+                    <Route path="/add_note" element={<AddNote />} />
                 </Routes>
             </BookProvider>
         </>

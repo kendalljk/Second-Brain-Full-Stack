@@ -1,9 +1,16 @@
-import React from 'react'
+import React, { useState, useContext, useEffect } from "react";
+import { BookContext } from "../contexts/BookContext";
 
 const AddNote = () => {
-  return (
-    <div>AddNote</div>
-  )
-}
+  const { state, dispatch } = useContext(BookContext);
+  console.log(state);
 
-export default AddNote
+  return (
+    
+    <div>
+      <img src={state.bookData.bookCover} alt={state.bookData.bookTitle}/>
+    </div>
+  )
+};
+
+export default AddNote;

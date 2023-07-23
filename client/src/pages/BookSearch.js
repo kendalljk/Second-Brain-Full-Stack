@@ -8,21 +8,26 @@ import { ACTION_TYPES } from "../hooks/useReducer";
 import leftArrow from "../icons/left-arrow.png";
 import rightArrow from "../icons/right-arrow.png";
 
-const BookSearch = ({ page, setPage }) => {
+const BookSearch = () => {
     const navigate = useNavigate();
+    const [page, setPage] = useState(1); // ensures displays first result each time
+    const [submitting, setSubmitting] = useState(false);
+
     const {
         state: { loading },
         dispatch,
     } = useContext(BookContext);
+
     const [searchParams, setSearchParams] = useState({
         bookTitle: "",
         authorName: "",
     });
+
     const [fetchParams, setFetchParams] = useState({
         bookTitle: "",
         authorName: "",
     });
-    const [submitting, setSubmitting] = useState(false);
+
     const { booksReturned, setBooksReturned } = useFetchBooks(
         fetchParams,
         page,
@@ -39,7 +44,7 @@ const BookSearch = ({ page, setPage }) => {
             bookTitle: "",
             authorName: "",
         });
-    }, []);
+    }, []); // clears search params when page is mounted
 
     useEffect(() => {
         if (booksReturned.length > 0) {
@@ -53,7 +58,7 @@ const BookSearch = ({ page, setPage }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setSubmitting(true);
+        setSubmitting(true); // triggers API call
         console.log("...fetching");
         setFetchParams(searchParams); // Set fetchParams as searchParams for the fetch call
         setSearchParams({ bookTitle: "", authorName: "" }); // Clear the search input fields
@@ -61,13 +66,13 @@ const BookSearch = ({ page, setPage }) => {
 
         const searchQuery =
             searchParams.bookTitle && searchParams.authorName
-                ? `/bookSearch/${encodeURIComponent(searchParams.bookTitle)}&author=${encodeURIComponent(searchParams.authorName)}`
+                ? `/bookSearch/${encodeURIComponent(
+                      searchParams.bookTitle
+                  )}&author=${encodeURIComponent(searchParams.authorName)}`
                 : searchParams.bookTitle
                 ? `/bookSearch/${encodeURIComponent(searchParams.bookTitle)}`
                 : searchParams.authorName
-                ? `/bookSearch/${encodeURIComponent(
-                      searchParams.authorName
-                  )}`
+                ? `/bookSearch/${encodeURIComponent(searchParams.authorName)}`
                 : "/bookSearch";
 
         navigate(searchQuery); // Navigate to the book list page with the dynamic URL

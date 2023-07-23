@@ -3,17 +3,15 @@ import { Container, Col, Row, Alert } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import addIcon from "../icons/add-icon.png";
-import { BookContext, ACTION_TYPES } from "../contexts/BookContext";
+import { BookContext } from "../contexts/BookContext";
+import { ACTION_TYPES } from "../hooks/useReducer";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const BookList = ({
-    loading,
-    booksReturned,
-    setBooksReturned,
-    setToReadList,
-}) => {
+const BookList = ({ booksReturned, setBooksReturned, setToReadList }) => {
     const { state, dispatch } = useContext(BookContext);
     const location = useLocation();
+    const navigate = useNavigate();
     console.log(booksReturned);
 
     useEffect(() => {
@@ -60,6 +58,19 @@ const BookList = ({
         }, 100);
     };
     //removes message first, then expanded
+
+    const navToAddNote = (book) => {
+      const returnedBookData = {
+        bookCover: book.coverArtUrl,
+        bookAuthor: book.author,
+        bookTitle: book.title,
+        };
+        dispatch({
+            type: ACTION_TYPES.START_ADD_NOTE,
+            payload: returnedBookData,
+        }); // Dispatch action to start fetching covers
+        navigate("/add_note");
+    };
 
     return (
         <Container className="text-center">
@@ -141,7 +152,10 @@ const BookList = ({
                                 />
                                 {hoveredBook === book.key && buttonMessage}
                             </Button>
-                            <Button variant="outline-primary">
+                            <Button
+                                onClick={()=>navToAddNote(book)}
+                                variant="outline-primary"
+                            >
                                 Add a note
                             </Button>
                         </Card>

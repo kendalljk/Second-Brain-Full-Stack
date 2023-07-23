@@ -66,7 +66,7 @@ const CreateNote = () => {
     return (
         <div>
             <Formik
-                initialValues={INITIAL_STATE.note}
+                initialValues={INITIAL_STATE.bookData}
                 validationSchema={Yup.object({
                     bookTitle: Yup.string()
                         .max(30, "Must be 30 characters or less")
