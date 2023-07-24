@@ -58,10 +58,19 @@ export const Navigation = () => {
                         <Nav.Item>
                             <Nav.Link
                                 as={Link}
-                                to="/add_note"
-                                eventKey="/add_note"
+                                to="/my_notes"
+                                eventKey="/my_notes"
                             >
-                                Add Note
+                                My Notes
+                            </Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link
+                                as={Link}
+                                to="/my_TBR"
+                                eventKey="/my_TBR"
+                            >
+                                My TBR
                             </Nav.Link>
                         </Nav.Item>
                     </Nav>

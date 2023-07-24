@@ -1,14 +1,15 @@
 import "./App.css";
 import React, { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+import { BookProvider } from "./contexts/BookContext";
 import Homepage from "./pages/Homepage";
 import Navigation from "./components/Navigation";
 import LoadingPage from "./pages/LoadingPage";
 import CreateNote from "./pages/CreateNote";
 import BookList from "./pages/BookList";
 import BookSearch from "./pages/BookSearch";
-import { BookProvider } from "./contexts/BookContext";
 import AddNote from "./pages/AddNote";
+import DisplayNotes from "./pages/DisplayNotes";
 
 function App() {
     const [page, setPage] = useState(1); // ensures displays first result each time
@@ -31,6 +32,7 @@ function App() {
                     </Route>
                     <Route path="/create_note" element={<CreateNote />} />
                     <Route path="/add_note" element={<AddNote />} />
+                    <Route path="/my_notes" element={<DisplayNotes />} />
                 </Routes>
             </BookProvider>
         </>
